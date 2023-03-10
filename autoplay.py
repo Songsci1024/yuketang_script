@@ -5,7 +5,7 @@ import re
 from configparser import ConfigParser
 
 
-class AutoPlay():
+class AutoPlay:
     def __init__(self):
         self.filepath = os.getcwd()
         self.driver = webdriver.Chrome(executable_path=self.filepath + r'\chromedriver.exe')  # r表示后面的字符串不转义
@@ -22,6 +22,21 @@ class AutoPlay():
         self.pwd = cf.get('userinfo', 'pwd')
         for i in cf.options('classinfo'):
             self.class_list.append(cf.get('classinfo', i))
+
+    def rate(self, speed=2):
+        """
+        选择播放速度
+        :param self:
+        :param speed: 默认二倍速。可选 0.5,1,1.25,1.5,2
+        :return:
+        """
+        script = f"""
+            var mousemove = document.createEvent("MouseEvent");
+            mousemove.initMouseEvent("mousemove", true, true, window, 0, 10, 10, 10, 10, 0, 0, 0, 0, 0, null);
+            document.getElementsByClassName('xt_video_player_speed')[0].dispatchEvent(mousemove);
+            document.querySelector("[data-speed='{speed}']").click();
+        """
+        self.driver.execute_script(script)
 
     def start(self):
         browser = self.driver
@@ -45,37 +60,34 @@ class AutoPlay():
             browser.find_elements_by_css_selector('span[class="blue ml20"]')[0].click()  # 展开课程
             video_list = browser.find_elements_by_css_selector(
                 'div[class="activity-info el-tooltip"] > span[class="tag"] > svg[class="icon"]')
-            # 存储出需要刷的视频索引
+            # 存储出课程所有的视频索引
             video_list = [i for i in range(len(video_list)) if
                           video_list[i].find_element_by_css_selector('use').get_attribute(
                               'xlink:href') == '#icon-shipin']
             finished_video = 0
             for video_index in video_list:
                 browser.find_elements_by_css_selector('div[class="activity-info el-tooltip"]')[video_index].click()
+                # 播放视频
+                play_button = browser.find_elements_by_xpath(
+                    '//*[@id="video-box"]/div/xt-wrap/xt-controls/xt-inner/xt-playbutton')[0]
                 while True:
                     # #选择二倍速
-                    # t = browser.find_element_by_xpath('//*[@id="video-box"]/div/xt-wrap/xt-controls/xt-inner/xt-speedbutton/xt-speedlist/ul/li[1]')
-
-                    # 播放视频
-                    button = browser.find_elements_by_xpath(
-                        '//*[@id="video-box"]/div/xt-wrap/xt-controls/xt-inner/xt-playbutton')[0]
-                    if button.find_element_by_css_selector('.play-btn-tip').get_attribute(
-                            'innerText') == '暂停':  # 如果视频是暂停状态，点击播放按钮
-                        button.click()
+                    self.rate()
+                    if play_button.find_element_by_css_selector('.play-btn-tip').get_attribute(
+                            'innerText') == '播放':  # 如果视频是暂停状态，点击播放按钮
+                        play_button.click()
                     finish_monitor = browser.find_element_by_xpath(
-                        '//*[@id="app"]/div[2]/div/div[2]/div/div[1]/div[2]/section[1]/div[2]/div/div/span')
-                    comp = re.compile('[1-9]\d*|0')
+                        '/html/body/div[4]/div[2]/div/div[2]/div/div/div/section[1]/div[2]/div/div/span')
+                    comp = re.compile(r'[1-9]\d*|0')
                     finish = comp.findall(finish_monitor.get_attribute('innerText'))[0]
-                    if int(finish) > 98:  # 视频播放完成
+                    if int(finish) > 99:  # 视频播放完成 虽然存在播放完成但是进度条没有100%的情况，实际上已经播放完成了
                         finished_video = finished_video + 1
                         print(f'第{finished_video}个视频已看完')
                         browser.back()  # 返回上一层，即课程列表
                         browser.refresh()  # 刷新页面,避免假死
                         browser.find_elements_by_css_selector('span[class="blue ml20"]')[0].click()  # 展开课程
                         break
-                    else:
-                        time.sleep(360)  # 等待6分钟
-                        browser.refresh()  # 刷新页面
+                    time.sleep(30)  # 每30s检测一次是否播放完成
             finished_class = finished_class + 1
             print(f'==============第{finished_class}个课程已看完==============')
             browser.back()
