@@ -8,8 +8,16 @@
 实现方法：使用python的selenium库在chromeDriver驱动程序下操作chrome浏览器，根据脚本逻辑实现视频播放。
 
 
-# 注
+# 使用事项
 config.ini文件：
 section为classinfo中，classname1,classname2,classname3，数字需要递增
 
 chromedriver.exe驱动程序要放在文件目录下，下载地址根据本地chrome版本选择适合的驱动程序
+
+
+
+# 更新日志
+2023-3-10：
+1. 重构了判断是否已完成的逻辑
+2. 增加了倍速播放功能
+3. 修复了部分bug
