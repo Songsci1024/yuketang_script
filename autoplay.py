@@ -78,9 +78,9 @@ class AutoPlay:
                         play_button.click()
                     finish_monitor = browser.find_element_by_xpath(
                         '/html/body/div[4]/div[2]/div/div[2]/div/div/div/section[1]/div[2]/div/div/span')
-                    comp = re.compile(r'[1-9]\d*|0')
-                    finish = comp.findall(finish_monitor.get_attribute('innerText'))[0]
-                    if int(finish) > 99:  # 视频播放完成 虽然存在播放完成但是进度条没有100%的情况，实际上已经播放完成了
+                    comp = re.compile(r'\d+(\.\d+)?')
+                    finish = comp.search(finish_monitor.get_attribute('innerText')).group()
+                    if float(finish) > 99:  # 视频播放完成 虽然存在播放完成但是进度条没有100%的情况，实际上已经播放完成了
                         finished_video = finished_video + 1
                         print(f'第{finished_video}个视频已看完')
                         browser.back()  # 返回上一层，即课程列表
